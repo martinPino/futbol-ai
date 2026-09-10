@@ -91,10 +91,23 @@
   /* ---- controles táctiles ---- */
   #touch{position:absolute;inset:0;display:none;pointer-events:none;z-index:6;touch-action:none;user-select:none;-webkit-user-select:none}
   body.touch #touch{display:block}
-  body.touch #keys,body.touch #help,body.touch #skip{display:none!important}
+  body.touch #keys,body.touch #help,body.touch #skip,body.touch #meters,body.touch #radar,body.touch #hud #meters,body.touch #hud #radar,body.touch #hud #keys{display:none!important;visibility:hidden!important}
   body.touch #spui{bottom:230px}
-  body.touch #radar{display:none}
-  body.touch #meters,body.touch #power,body.touch #stam{transform:translateY(-120px)}
+  /* potencia flotante sobre el jugador (solo mientras carga el disparo) */
+  #powHud{position:absolute;left:0;top:0;width:96px;height:9px;margin-left:-48px;margin-top:-14px;border-radius:5px;background:rgba(8,11,18,.75);border:1px solid rgba(143,160,180,.5);opacity:0;transition:opacity .12s;pointer-events:none;z-index:5}
+  #powHud i{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,#7fffab,#f2d418 60%,#e2603a)}
+  #powHud.on{opacity:1}
+  /* potencia abajo-izquierda, encima del joystick, solo al cargar (móvil) */
+  #powCorner{position:absolute;left:max(18px,env(safe-area-inset-left));bottom:max(190px,calc(env(safe-area-inset-bottom) + 190px));width:150px;height:10px;border-radius:5px;background:rgba(8,11,18,.75);border:1px solid rgba(143,160,180,.5);opacity:0;transition:opacity .12s;pointer-events:none;z-index:5;display:none}
+  #powCorner i{display:block;height:100%;width:0;border-radius:4px;background:linear-gradient(90deg,#7fffab,#f2d418 60%,#e2603a)}
+  #powCorner.on{opacity:1}
+  body.touch #powCorner{display:block}
+  /* menú de inicio en táctil: sin tabla de teclas, con ayuda de gestos */
+  body.touch #start table{display:none}
+  body.touch #start .tag{margin-bottom:10px}
+  #touchHelp{display:none;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;line-height:1.9;color:#8fa0b4;margin:6px 0 14px}
+  #touchHelp b{color:#cff5dd;font-weight:500}
+  body.touch #touchHelp{display:block}
   body.touch #hud{transform:scale(.82);transform-origin:top center}
   #stick{position:absolute;left:max(18px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));width:150px;height:150px;border-radius:50%;
     background:rgba(8,11,18,.35);border:1.5px solid rgba(143,160,180,.35);pointer-events:auto}
@@ -155,6 +168,8 @@
     <div class="m"><div class="lb">ROSCA · Q/E (o A/D cargando)</div><div class="bar cv"><i id="spC"></i></div></div>
     <div class="m lbl">A/D apuntar · ESPACIO potencia · X pase corto</div></div>
   <div id="refdbg"></div>
+  <div id="powHud"><i id="powHudFill"></i></div>
+  <div id="powCorner"><i id="powCornerFill"></i></div>
   <div id="touch">
     <div id="stick"><div id="knob"></div></div>
     <div id="tbtns">
@@ -179,6 +194,7 @@
       <tr><td>SHIFT</td><td>sprint (gasta aguante)</td></tr>
       <tr><td>Q / C / N / B / P</td><td>cambiar jugador · cámara · noche · estadio · pausa</td></tr>
     </table>
+    <div id="touchHelp"><b>JOYSTICK</b> mover · en tiro libre apuntar y altura<br><b>DISPARO</b> mantén = potencia · inclina el joystick = rosca<br><b>PASE</b> raso · <b>BOMBEO</b> centro/largo · <b>SPRINT</b> · <b>CAMBIAR</b> jugador</div>
     <div id="venues">
       <button class="vb" data-v="0">ESTADIO CENTRAL</button>
       <button class="vb" data-v="1">AL WAKRAH</button>
@@ -957,10 +973,13 @@ function keysWatchdog() { if (performance.now() - keyStamp > 6000) { for (const 
 
 /* ---------------- controles táctiles (móvil / tablet) ---------------- */
 const TOUCH = { on: false, stick: { x: 0, y: 0, len: 0 }, sprint: false, curl: null, id: null };
+/* detección temprana: oculta la ayuda de teclado del menú antes de JUGAR */
+if (matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 1)) document.body.classList.add('touch');
 function setupTouch() {
   const coarse = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 1);
   if (!coarse) return;
   TOUCH.on = true; document.body.classList.add('touch');
+  for (const id of ['meters', 'radar', 'keys']) { const el = $(id); if (el) el.style.display = 'none'; }
   const stick = $('stick'), knob = $('knob');
   const R = 75, DEAD = 8;
   const setKnob = (dx, dy) => { knob.style.transform = `translate(${dx}px,${dy}px)`; };
@@ -1051,6 +1070,18 @@ function hud() {
   const m = Math.floor(S.minute), sec = Math.floor((S.minute % 1) * 60);
   $('clock').textContent = `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')} · ${S.half}ª PARTE`;
   $('powFill').style.width = (S.charging ? S.charge * 100 : 0) + '%';
+  // barra de potencia flotante sobre la cabeza del jugador que carga (móvil y escritorio)
+  const ph = $('powHud');
+  const shooter = S.charging ? (S.mode === 'setpiece' && S.sp ? S.sp.taker : S.ctrl) : null;
+  if (shooter) {
+    _tmp.set(shooter.pos.x, 2.25 * shooter.h, shooter.pos.z).project(camera);
+    if (_tmp.z < 1) {
+      ph.style.transform = `translate(${(_tmp.x * 0.5 + 0.5) * innerWidth}px,${(-_tmp.y * 0.5 + 0.5) * innerHeight}px)`;
+      $('powHudFill').style.width = (S.charge * 100) + '%';
+      ph.classList.add('on');
+    } else ph.classList.remove('on');
+  } else ph.classList.remove('on');
+  $('powCorner').classList.toggle('on', !!shooter); if (shooter) $('powCornerFill').style.width = (S.charge * 100) + '%';
   $('stamFill').style.width = S.stam + '%';
   $('stamFill').style.background = S.stam < 25 ? '#e2603a' : '#3fbf7a';
 }

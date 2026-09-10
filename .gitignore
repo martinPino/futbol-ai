@@ -1,0 +1,12 @@
+uploads/
+screenshots/
+Tools/
+design_handoff_space_asset_kit/
+space-*.html
+space-kit-*.js
+dino-*.html
+dino-kit-*.js
+Canvas.dc.html
+football-game-v1-backup.html
+*.DS_Store
+.thumbnail

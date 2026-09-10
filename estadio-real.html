@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Al Wakrah — modelo real</title>
+<script type="importmap">
+{"imports":{
+ "three":"https://unpkg.com/three@0.184.0/build/three.module.js",
+ "three/addons/controls/OrbitControls.js":"https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+ "three/addons/exporters/OBJExporter.js":"https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+ "three/addons/exporters/GLTFExporter.js":"https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js",
+ "three/addons/loaders/GLTFLoader.js":"https://unpkg.com/three@0.184.0/examples/jsm/loaders/GLTFLoader.js"
+}}
+</script>
+<style>
+  html,body{margin:0;height:100%;background:#05070c;color:#dfe6ef;font-family:monospace;overflow:hidden}
+  three-d-stage{width:100%;height:100%;display:block}
+  #info{position:fixed;left:12px;top:12px;font-size:11px;line-height:1.7;color:#9fb0c2;white-space:pre;background:rgba(5,8,12,.7);padding:10px 12px;border-radius:6px;max-height:80vh;overflow:auto}
+</style>
+</head>
+<body>
+<div id="info">cargando modelo…</div>
+<three-d-stage name="Al_Wakrah_Real" background="#0a0e15"></three-d-stage>
+<script src="./three-d-stage.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { loadWakrahReal, alignWakrah, ALIGN } from './stadium-model.js';
+const info = document.getElementById('info');
+const stage = document.querySelector('three-d-stage');
+await stage.ready;
+try {
+  const scene = await loadWakrahReal(p => info.textContent = 'cargando… ' + Math.round(p * 100) + '%');
+  const g = alignWakrah(scene);
+  stage.setObject(g);
+  const box = new THREE.Box3().setFromObject(g);
+  const size = box.getSize(new THREE.Vector3());
+  let meshes = 0, tris = 0;
+  const names = [];
+  scene.traverse(o => {
+    if (o.isMesh) { meshes++; tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; }
+  });
+  scene.children.forEach(c => names.push(c.name + ' [' + c.type + '] hijos:' + c.children.length));
+  info.textContent =
+    `bbox ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}\n` +
+    `min ${box.min.x.toFixed(1)},${box.min.y.toFixed(1)},${box.min.z.toFixed(1)}\n` +
+    `max ${box.max.x.toFixed(1)},${box.max.y.toFixed(1)},${box.max.z.toFixed(1)}\n` +
+    `meshes ${meshes} · tris ${Math.round(tris).toLocaleString()}\n— nodos raíz —\n` + names.join('\n');
+  window.__stat = { size: size.toArray(), min: box.min.toArray(), max: box.max.toArray(), meshes, tris };
+  window.__g = g; window.__scene = scene; window.__stage = stage; window.__THREE = THREE;
+  // overlay de calibración: campo lógico 105×68 en rojo
+  const ov = new THREE.Group(); ov.name = 'DEBUG_Campo';
+  const lm = new THREE.LineBasicMaterial({ color: 0xff3355 });
+  const rect = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-34, 0.25, -52.5), new THREE.Vector3(34, 0.25, -52.5),
+    new THREE.Vector3(34, 0.25, 52.5), new THREE.Vector3(-34, 0.25, 52.5), new THREE.Vector3(-34, 0.25, -52.5)]);
+  ov.add(new THREE.Line(rect, lm));
+  const mid = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-34, 0.25, 0), new THREE.Vector3(34, 0.25, 0)]);
+  ov.add(new THREE.Line(mid, lm));
+  const circ = [];
+  for (let i = 0; i <= 48; i++) circ.push(new THREE.Vector3(Math.cos(i / 48 * 6.283) * 9.15, 0.25, Math.sin(i / 48 * 6.283) * 9.15));
+  ov.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circ), lm));
+  g.add(ov);
+  window.__apply = (patch) => {
+    Object.assign(ALIGN, patch);
+    scene.rotation.y = ALIGN.rotY;
+    scene.scale.set(ALIGN.scale, ALIGN.scale, ALIGN.scaleZ ?? ALIGN.scale);
+    scene.position.set(ALIGN.x, ALIGN.y, ALIGN.z);
+    return JSON.stringify(ALIGN);
+  };
+} catch (e) {
+  info.textContent = 'ERROR: ' + e.message;
+  console.error(e);
+}
+</script>
+</body>
+</html>

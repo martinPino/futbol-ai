@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Estrellas — previsualización</title>
+<script type="importmap">
+{"imports":{
+ "three":"https://unpkg.com/three@0.184.0/build/three.module.js",
+ "three/addons/controls/OrbitControls.js":"https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+ "three/addons/exporters/OBJExporter.js":"https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+ "three/addons/exporters/GLTFExporter.js":"https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js",
+ "three/addons/loaders/FBXLoader.js":"https://unpkg.com/three@0.184.0/examples/jsm/loaders/FBXLoader.js",
+ "three/addons/utils/BufferGeometryUtils.js":"https://unpkg.com/three@0.184.0/examples/jsm/utils/BufferGeometryUtils.js",
+ "three/addons/libs/fflate.module.js":"https://unpkg.com/three@0.184.0/examples/jsm/libs/fflate.module.js",
+ "three/addons/curves/NURBSCurve.js":"https://unpkg.com/three@0.184.0/examples/jsm/curves/NURBSCurve.js",
+ "three/addons/curves/NURBSUtils.js":"https://unpkg.com/three@0.184.0/examples/jsm/curves/NURBSUtils.js"
+}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#05070c;color:#dfe6ef;font-family:'Space Grotesk',sans-serif;overflow:hidden}
+  three-d-stage{width:100%;height:100%;display:block}
+  #bar{position:fixed;left:14px;top:14px;display:flex;gap:6px;flex-wrap:wrap;max-width:60vw}
+  button{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;background:#0d121b;border:1px solid #1b2431;
+    color:#9fb0c2;padding:7px 12px;border-radius:4px;cursor:pointer}
+  button[aria-pressed="true"]{background:#122c1c;border-color:#2f9555;color:#7fffab}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<three-d-stage name="Estrella" background="#0a0e15"></three-d-stage>
+<script src="./three-d-stage.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { loadHero } from './hero-models.js';
+import { Animator } from './player-rig.js';
+const stage = document.querySelector('three-d-stage');
+await stage.ready;
+const heroes = { ronaldo: await loadHero('ronaldo'), messi: await loadHero('messi') };
+let cur = heroes.ronaldo, pose = 'run';
+const st = { pose, speed: 7, dt: 0.016, t: 0, kick: 0, celebrate: 0 };
+function show(k) {
+  cur = heroes[k];
+  stage.setObject(cur.root);
+  stage.frameFrom([1, 0.35, 1.6], 0.9);
+}
+const bar = document.getElementById('bar');
+const add = (label, fn, group) => {
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.g = group;
+  b.onclick = () => {
+    bar.querySelectorAll(`[data-g="${group}"]`).forEach(o => o.setAttribute('aria-pressed', o === b));
+    fn();
+  };
+  bar.appendChild(b); return b;
+};
+add('RONALDO', () => show('ronaldo'), 'who').setAttribute('aria-pressed', true);
+add('MESSI', () => show('messi'), 'who');
+['stand', 'walk', 'run', 'kick', 'celebrate'].forEach((p, i) => {
+  const b = add(p.toUpperCase(), () => {
+    pose = p;
+    st.pose = p === 'kick' || p === 'celebrate' ? 'stand' : p;
+    st.speed = p === 'run' ? 7.5 : p === 'walk' ? 2.2 : 0;
+    st.kick = p === 'kick' ? 0.15 : 0;
+    st.celebrate = p === 'celebrate' ? 3 : 0;
+  }, 'pose');
+  if (i === 2) b.setAttribute('aria-pressed', true);
+});
+show('ronaldo');
+const clock = new THREE.Clock();
+const anims = new Map();
+(function loop() {
+  requestAnimationFrame(loop);
+  st.dt = Math.min(clock.getDelta(), 0.05);
+  st.t = clock.elapsedTime;
+  if (!cur) return;
+  if (!anims.has(cur)) anims.set(cur, new Animator(J => cur.applyJoints(J)));
+  const A = anims.get(cur);
+  if (pose === 'kick' && !A.act) A.play('kick');
+  if (pose === 'celebrate' && !A.is('celebrate')) A.play('celebrate', { hold: true });
+  if (pose !== 'celebrate' && A.is('celebrate')) A.stop();
+  A.update(st.dt, { speed: st.speed, accel: 0, turn: 0, t: st.t });
+})();
+window.__ready = true;
+</script>
+</body>
+</html>

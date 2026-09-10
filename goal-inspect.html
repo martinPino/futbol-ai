@@ -1,0 +1,23 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.184.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.184.0/examples/jsm/"}}</script>
+<style>body{margin:0;background:#223;color:#cde;font:11px monospace}#log{position:absolute;left:8px;top:8px;white-space:pre;background:rgba(0,0,0,.6);padding:8px}</style></head><body><div id="log">…</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const g = await new GLTFLoader().loadAsync('./assets/goal/football_net.glb');
+const s = g.scene; s.updateMatrixWorld(true);
+const bb = new THREE.Box3().setFromObject(s), size = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+const out = [`bbox size ${size.toArray().map(v=>v.toFixed(3))} min ${bb.min.toArray().map(v=>v.toFixed(3))} max ${bb.max.toArray().map(v=>v.toFixed(3))}`];
+s.traverse(o => { if (o.isMesh) { const b2 = new THREE.Box3().setFromObject(o); const sz = b2.getSize(new THREE.Vector3()); out.push(`${o.name} mat=${o.material && o.material.name} tris=${((o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3)|0} size=${sz.toArray().map(v=>v.toFixed(2))} c=${b2.getCenter(new THREE.Vector3()).toArray().map(v=>v.toFixed(2))} transp=${o.material&&o.material.transparent} map=${!!(o.material&&o.material.map)} alphaMap=${!!(o.material&&o.material.alphaMap)} side=${o.material&&o.material.side}`); } });
+document.getElementById('log').textContent = out.join('\n'); window.__out = out;
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x3a5a3a);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445544, 1.5)); const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(5, 10, 6); scene.add(sun);
+scene.add(s);
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.01, 1000);
+const r = Math.max(size.x, size.y, size.z);
+camera.position.set(c.x + r * 1.2, c.y + r * 0.7, c.z + r * 1.6); camera.lookAt(c);
+window.__view = m => { if (m === 'front') camera.position.set(c.x, c.y + r * 0.3, c.z + r * 2.2); else if (m === 'back') camera.position.set(c.x, c.y + r * 0.3, c.z - r * 2.2); else if (m === 'top') camera.position.set(c.x, c.y + r * 2.5, c.z + 0.01); camera.lookAt(c); renderer.render(scene, camera); };
+(function loop() { requestAnimationFrame(loop); renderer.render(scene, camera); })();
+window.__ready = true;
+</script></body></html>

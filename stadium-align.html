@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Alineación de estadio</title>
+<style>body{margin:0;background:#111;color:#cde;font:12px monospace}#log{position:absolute;left:8px;top:8px;white-space:pre;background:rgba(0,0,0,.6);padding:8px}</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.184.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.184.0/examples/jsm/"}}</script>
+</head><body><div id="log">cargando…</div>
+<script type="module">
+import * as THREE from 'three';
+import { loadStadium, STADIUMS } from './stadium-model.js';
+const id = new URLSearchParams(location.search).get('id') || 'euro';
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x203040);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(100, 200, 100); scene.add(sun);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.5, 5000);
+const model = await loadStadium(id);
+scene.add(model);
+model.updateMatrixWorld(true);
+const bb = new THREE.Box3().setFromObject(model);
+const size = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
+const lines = [`modelo ${id}: bbox size ${size.toArray().map(v => v.toFixed(1))} center ${c.toArray().map(v => v.toFixed(1))}`];
+const meshes = [];
+model.traverse(o => { if (o.isMesh) { const b = new THREE.Box3().setFromObject(o); const s = b.getSize(new THREE.Vector3()); const tris = (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; meshes.push({ n: o.name, m: o.material && o.material.name, tris, s, cy: b.getCenter(new THREE.Vector3()) }); } });
+meshes.sort((a, b) => b.tris - a.tris);
+lines.push(`meshes: ${meshes.length}`);
+for (const m of meshes.slice(0, 40)) lines.push(`${m.n} [${m.m}] tris=${m.tris | 0} size=${m.s.toArray().map(v => v.toFixed(1))} c=${m.cy.toArray().map(v => v.toFixed(1))}`);
+// mallas planas y bajas (candidatas a césped/suelo)
+lines.push('--- planas bajas ---');
+for (const m of meshes.filter(m => m.s.y < 200 && m.s.x > 3000 && m.s.z > 3000)) lines.push(`${m.n} [${m.m}] tris=${m.tris | 0} size=${m.s.toArray().map(v => v.toFixed(1))} c=${m.cy.toArray().map(v => v.toFixed(1))}`);
+window.__meshes = meshes;
+document.getElementById('log').textContent = lines.join('\n');
+console.log(lines.join('\n'));
+// vista cenital + grilla de referencia 105x68 en el origen
+const grid = new THREE.Mesh(new THREE.PlaneGeometry(68, 105), new THREE.MeshBasicMaterial({ color: 0xff3366, wireframe: true }));
+grid.rotation.x = -Math.PI / 2; grid.position.y = c.y - size.y / 2 + 0.5; scene.add(grid);
+const r = Math.max(size.x, size.z);
+camera.position.set(c.x, c.y + r * 1.4, c.z + 0.01); camera.lookAt(c);
+window.__view = (mode) => { if (mode === 'side') { camera.position.set(c.x + r * 1.2, c.y + size.y * 0.3, c.z); camera.lookAt(c); } else { camera.position.set(c.x, c.y + r * 1.4, c.z + 0.01); camera.lookAt(c); } renderer.render(scene, camera); };
+window.__ready = true;
+(function loop() { requestAnimationFrame(loop); renderer.render(scene, camera); })();
+</script></body></html>

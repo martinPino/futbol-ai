@@ -1,0 +1,23 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.184.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.184.0/examples/jsm/"}}</script>
+<style>body{margin:0;background:#111;color:#cde;font:11px monospace;white-space:pre;padding:10px}</style></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+const g = await new GLTFLoader().loadAsync('./assets/anim/UAL1_Standard.glb');
+const out = [];
+out.push('CLIPS ' + g.animations.length);
+for (const a of g.animations) out.push(`${a.name}  dur=${a.duration.toFixed(2)} tracks=${a.tracks.length}`);
+const bones = [];
+g.scene.traverse(o => { if (o.isBone) bones.push(o.name + (o.parent && o.parent.isBone ? ' < ' + o.parent.name : '')); });
+out.push('--- HUESOS UAL ' + bones.length); out.push(...bones);
+// esqueleto del jugador (FBX base)
+try {
+  const fbx = await new FBXLoader().loadAsync('./assets/players/messi/model.fbx');
+  const b2 = []; fbx.traverse(o => { if (o.isBone) b2.push(o.name + (o.parent && o.parent.isBone ? ' < ' + o.parent.name : '')); });
+  out.push('--- HUESOS JUGADOR ' + b2.length); out.push(...b2);
+} catch (e) { out.push('fbx jugador no cargado: ' + e.message); }
+document.body.textContent = out.join('\n');
+window.__out = out; window.__ready = true;
+</script></body></html>

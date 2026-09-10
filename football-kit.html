@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Football Kit — Estadio y Equipos</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js",
+    "three/addons/loaders/GLTFLoader.js": "https://unpkg.com/three@0.184.0/examples/jsm/loaders/GLTFLoader.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  three-d-stage:not(:defined){visibility:hidden}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05070c;color:#dfe6ef;font-family:'Space Grotesk',system-ui,sans-serif;overflow:hidden}
+  a{color:#4fd6ff}a:hover{color:#8ce8ff}
+  #app{display:grid;grid-template-columns:322px 1fr;height:100%}
+  aside{background:#080b12;border-right:1px solid #171d28;display:flex;flex-direction:column;min-height:0}
+  header{padding:20px 20px 14px;border-bottom:1px solid #171d28}
+  h1{margin:0;font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .sub{margin:6px 0 0;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.5;color:#6d7a8c;letter-spacing:.03em}
+  .scroll{overflow-y:auto;flex:1;min-height:0;padding:14px 14px 22px}
+  .grp{margin:0 0 18px}
+  .lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:#5b687a;padding:0 6px 8px}
+  .list{display:flex;flex-direction:column;gap:3px}
+  button.item{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;background:transparent;border:1px solid transparent;color:#b7c2d0;padding:8px 10px;border-radius:5px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.02em;transition:background .12s,color .12s}
+  button.item:hover{background:#0f151f;color:#e8eef6}
+  button.item[aria-pressed="true"]{background:#0e2416;border-color:#1d5e35;color:#7fffab}
+  button.item .m{font-size:9.5px;color:#5f6d80}
+  button.item[aria-pressed="true"] .m{color:#4b9265}
+  .row{display:flex;flex-wrap:wrap;gap:4px;padding:0 4px}
+  .chip{background:#0d121b;border:1px solid #1b2431;color:#9fb0c2;font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 9px;border-radius:4px;cursor:pointer}
+  .chip:hover{border-color:#2b8555;color:#cff5dd}
+  .chip[aria-pressed="true"]{background:#122c1c;border-color:#2f9555;color:#7fffab}
+  footer{border-top:1px solid #171d28;padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5f6d80;line-height:1.7}
+  footer b{color:#9fb0c2;font-weight:500}
+  main{position:relative;min-width:0}
+  three-d-stage{width:100%;height:100%;display:block}
+  .hint{position:absolute;left:18px;bottom:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#4d5a6b;letter-spacing:.04em;pointer-events:none}
+  .badge{position:absolute;right:18px;top:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#5c6b7d;text-align:right;line-height:1.7;pointer-events:none}
+  .badge b{color:#7fffab;font-weight:500}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <header>
+      <h1>Football Kit</h1>
+      <p class="sub">ESTADIO + EQUIPOS · 1 unidad = 1 m<br>22 jugadores, árbitros, balón y cancha FIFA — listos para montar el juego.</p>
+    </header>
+    <div class="scroll">
+      <div class="grp">
+        <div class="lbl">Assets generados</div>
+        <div class="list" id="catalog"></div>
+      </div>
+      <div class="grp">
+        <div class="lbl">Vistas</div>
+        <div class="row" id="views"></div>
+      </div>
+      <div class="grp">
+        <div class="lbl">Iluminación</div>
+        <div class="row" id="lights"></div>
+      </div>
+    </div>
+    <footer id="stats"></footer>
+  </aside>
+  <main>
+    <three-d-stage name="Partido_Completo" background="#05070c"></three-d-stage>
+    <div class="badge" id="badge"></div>
+    <div class="hint">arrastrar = orbitar · rueda = zoom · clic derecho = desplazar</div>
+  </main>
+</div>
+
+<script src="./three-d-stage.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { CATALOG } from './football-kit-models.js';
+
+const stage = document.querySelector('three-d-stage');
+await stage.ready;
+const api = stage.three;
+api.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+api.renderer.toneMappingExposure = 1.1;
+api.renderer.shadowMap.enabled = true;
+api.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+/* realistic sky environment (PMREM) — what sells the PBR materials */
+function skyEnvironment(mode) {
+  const S = 1024, H = 512;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  if (mode === 'day') {
+    g.addColorStop(0, '#3d78c8'); g.addColorStop(0.42, '#7fb2e8');
+    g.addColorStop(0.55, '#cfe2ee'); g.addColorStop(0.6, '#5a7050'); g.addColorStop(1, '#2e4030');
+  } else {
+    g.addColorStop(0, '#060a14'); g.addColorStop(0.5, '#0c1422');
+    g.addColorStop(0.58, '#1a2030'); g.addColorStop(1, '#05070c');
+  }
+  ctx.fillStyle = g; ctx.fillRect(0, 0, S, H);
+  if (mode === 'day') {
+    const kg = ctx.createRadialGradient(S * 0.68, H * 0.24, 0, S * 0.68, H * 0.24, 90);
+    kg.addColorStop(0, '#ffffff'); kg.addColorStop(0.2, 'rgba(255,248,225,0.9)'); kg.addColorStop(1, 'rgba(255,240,200,0)');
+    ctx.fillStyle = kg; ctx.beginPath(); ctx.arc(S * 0.68, H * 0.24, 90, 0, 6.3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (let i = 0; i < 14; i++) {
+      const x = Math.random() * S, y = H * (0.1 + Math.random() * 0.3), w2 = 40 + Math.random() * 120;
+      ctx.beginPath(); ctx.ellipse(x, y, w2, w2 * 0.22, 0, 0, 6.3); ctx.fill();
+    }
+  } else {
+    // floodlight glow domes on the horizon
+    for (const x of [S * 0.2, S * 0.45, S * 0.7, S * 0.95]) {
+      const kg = ctx.createRadialGradient(x, H * 0.56, 0, x, H * 0.56, 70);
+      kg.addColorStop(0, 'rgba(255,246,216,0.55)'); kg.addColorStop(1, 'rgba(255,246,216,0)');
+      ctx.fillStyle = kg; ctx.beginPath(); ctx.arc(x, H * 0.56, 70, 0, 6.3); ctx.fill();
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const pmrem = new THREE.PMREMGenerator(api.renderer);
+  const env = pmrem.fromEquirectangular(tex).texture;
+  pmrem.dispose();
+  return env;
+}
+const envDay = skyEnvironment('day');
+const envNight = skyEnvironment('night');
+
+/* day / night rigs */
+const dayRig = new THREE.Group();
+{
+  const sun = new THREE.DirectionalLight(0xfff2dc, 3.0);
+  sun.position.set(60, 90, 40);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -110; sun.shadow.camera.right = 110;
+  sun.shadow.camera.top = 120; sun.shadow.camera.bottom = -120;
+  sun.shadow.camera.far = 400;
+  sun.shadow.bias = -0.0004;
+  const sky = new THREE.HemisphereLight(0xbdd8ff, 0x2e5d33, 0.85);
+  dayRig.add(sun, sky);
+}
+const nightRig = new THREE.Group();
+{
+  const amb = new THREE.HemisphereLight(0x3a4a66, 0x131b16, 0.4);
+  nightRig.add(amb);
+  let casters = 0;
+  for (const sx of [1, -1]) for (const sz of [1, -1]) {
+    const sp = new THREE.SpotLight(0xfff6d8, 160, 0, 0.55, 0.55, 1.1);
+    sp.position.set(sx * 68, 36, sz * 86);
+    sp.target.position.set(sx * 8, 0, sz * 12);
+    if (casters++ < 2) {           // two shadow-casting floods are enough
+      sp.castShadow = true;
+      sp.shadow.mapSize.set(1024, 1024);
+      sp.shadow.bias = -0.0004;
+    }
+    nightRig.add(sp, sp.target);
+  }
+}
+const studio = api.scene.children.filter(o => o.isLight);
+function setLighting(mode) {
+  studio.forEach(l => { l.visible = false; });
+  api.scene.remove(dayRig, nightRig);
+  api.scene.add(mode === 'day' ? dayRig : nightRig);
+  api.scene.environment = mode === 'day' ? envDay : envNight;
+  api.scene.environmentIntensity = mode === 'day' ? 0.85 : 0.4;
+  api.renderer.toneMappingExposure = mode === 'day' ? 1.1 : 0.95;
+  api.ground.visible = false;
+}
+
+const VIEWS = [
+  ['Órbita', [1, 0.55, 1.25], 1],
+  ['TV', [1.6, 0.7, 0.001], 0.55],
+  ['Cenital', [0.001, 1, 0.001], 0.8],
+  ['Portería', [0, 0.18, -1], 0.7],
+  ['Córner', [1, 0.4, 1], 0.6],
+  ['Cercana', [0.9, 0.35, 0.9], 0.22],
+];
+
+const catalogEl = document.getElementById('catalog');
+const viewsEl = document.getElementById('views');
+const lightsEl = document.getElementById('lights');
+const statsEl = document.getElementById('stats');
+const badgeEl = document.getElementById('badge');
+let current = null;
+const cache = new Map();
+
+function stats(obj) {
+  let tris = 0, meshes = 0;
+  const mats = new Set();
+  obj.traverse(o => {
+    if (o.isMesh) {
+      meshes++;
+      const g = o.geometry;
+      tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+      mats.add(o.material.name || o.material.uuid);
+    }
+  });
+  return { tris: Math.round(tris), meshes, mats: mats.size };
+}
+
+function select(entry, btn) {
+  [...catalogEl.children].forEach(b => b.setAttribute('aria-pressed', b === btn));
+  if (!cache.has(entry.id)) cache.set(entry.id, entry.build());
+  const obj = cache.get(entry.id);
+  current = obj;
+  stage.setAttribute('name', entry.label);
+  stage.setObject(obj);
+  const s = stats(obj);
+  const box = new THREE.Box3().setFromObject(obj);
+  const d = box.getSize(new THREE.Vector3());
+  statsEl.innerHTML =
+    `<b>${s.tris.toLocaleString('es')}</b> triángulos · <b>${s.meshes}</b> meshes · <b>${s.mats}</b> materiales<br>` +
+    `bbox <b>${d.x.toFixed(1)} × ${d.y.toFixed(1)} × ${d.z.toFixed(1)}</b> m`;
+  badgeEl.innerHTML = `<b>${entry.label}</b><br>${entry.meta}`;
+  setView(0);
+}
+function setView(i) {
+  [...viewsEl.children].forEach((b, j) => b.setAttribute('aria-pressed', i === j));
+  const [, dir, mul] = VIEWS[i];
+  stage.frameFrom(dir, mul);
+}
+CATALOG.forEach(entry => {
+  const b = document.createElement('button');
+  b.className = 'item';
+  b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = `<span>${entry.label}</span><span class="m">${entry.meta}</span>`;
+  b.onclick = () => select(entry, b);
+  catalogEl.appendChild(b);
+});
+VIEWS.forEach(([label], i) => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = label;
+  b.onclick = () => setView(i);
+  viewsEl.appendChild(b);
+});
+[['Día', 'day'], ['Noche', 'night']].forEach(([label, mode], i) => {
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.textContent = label;
+  b.setAttribute('aria-pressed', i === 0);
+  b.onclick = () => {
+    [...lightsEl.children].forEach(x => x.setAttribute('aria-pressed', x === b));
+    setLighting(mode);
+  };
+  lightsEl.appendChild(b);
+});
+setLighting('day');
+select(CATALOG[0], catalogEl.children[0]);
+</script>
+</body>
+</html>

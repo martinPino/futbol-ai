@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>body{margin:0;background:#222}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { makeCrowdAndFlags } from './crowd-flags.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x6f8fb0);
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 500);
+scene.add(new THREE.HemisphereLight(0xcfe4ff, 0x3a4030, 1.1));
+const sun = new THREE.DirectionalLight(0xfff2dd, 2.2); sun.position.set(30, 60, 40);
+scene.add(sun);
+
+/* mini grada: 6 filas × 30° de arco a radio 60 para probar el muestreo/snap */
+const seg = new THREE.CylinderGeometry(66, 60, 6, 48, 6, true, -0.3, 0.6);
+const grada = new THREE.Mesh(seg, new THREE.MeshStandardMaterial({ color: 0x3a6fb8, side: THREE.DoubleSide, name: 'Grada_test' }));
+grada.position.y = 3;
+grada.geometry.rotateX(0);           // superficie inclinada tipo bowl
+const root = new THREE.Group();
+root.add(grada);
+scene.add(root);
+const amb = makeCrowdAndFlags(root);
+scene.add(amb.group);
+
+camera.position.set(0, 7, 47);
+camera.lookAt(0, 4.5, 62);
+const clock = new THREE.Clock();
+(function loop() {
+  requestAnimationFrame(loop);
+  amb.update(clock.getElapsedTime(), 0);
+  renderer.render(scene, camera);
+})();
+</script>
+</body></html>

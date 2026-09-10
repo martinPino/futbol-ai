@@ -19,20 +19,35 @@ export const STADIUMS = {
 /* compatibilidad */
 export const ALIGN = STADIUMS.wakrah.align;
 
-const cache = {};
-export async function loadStadium(id, onProgress) {
+const cache = {};   // id -> promesa de la escena parseada (una sola carga por estadio)
+export function loadStadium(id, onProgress) {
+  if (!cache[id]) cache[id] = loadStadiumFresh(id, onProgress).catch(e => { delete cache[id]; throw e; });
+  return cache[id];
+}
+/* libera el GLB parseado (móvil: un solo estadio residente); si aún se está cargando, se libera al terminar */
+export function disposeStadium(id) {
+  const p = cache[id]; if (!p) return;
+  delete cache[id];
+  p.then(sc => sc.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+    for (const m of mats) { for (const k in m) { const t = m[k]; if (t && t.isTexture) t.dispose(); } m.dispose(); }
+  })).catch(() => {});
+}
+async function loadStadiumFresh(id, onProgress) {
   const cfg = STADIUMS[id];
-  if (cache[id]) return cache[id];
-  const bufs = [];
-  for (let i = 0; i < cfg.parts.length; i++) {
-    const r = await fetch(cfg.parts[i]);
-    if (!r.ok) throw new Error('parte no encontrada: ' + cfg.parts[i]);
-    bufs.push(await r.arrayBuffer());
-    onProgress && onProgress((i + 1) / (cfg.parts.length + 1));
-  }
-  const gz = new Blob(bufs);
+  // los trozos se descomprimen en streaming según llegan: ni el gzip completo ni copias intermedias quedan en memoria
   const ds = new DecompressionStream('gzip');
-  const glb = await new Response(gz.stream().pipeThrough(ds)).arrayBuffer();
+  const inflated = new Response(ds.readable).arrayBuffer();
+  try {
+    for (let i = 0; i < cfg.parts.length; i++) {
+      const r = await fetch(cfg.parts[i]);
+      if (!r.ok) throw new Error('parte no encontrada: ' + cfg.parts[i]);
+      await r.body.pipeTo(ds.writable, { preventClose: i < cfg.parts.length - 1 });
+      onProgress && onProgress((i + 1) / (cfg.parts.length + 1));
+    }
+  } catch (e) { inflated.catch(() => {}); ds.writable.abort(e).catch(() => {}); throw e; }
+  const glb = await inflated;
   const gltf = await new GLTFLoader().parseAsync(glb, './assets/stadium/');
   onProgress && onProgress(1);
   const scene = gltf.scene || gltf.scenes[0];
@@ -79,7 +94,6 @@ export async function loadStadium(id, onProgress) {
       }
     }
   });
-  cache[id] = scene;
   return scene;
 }
 export function alignStadium(id, scene) {

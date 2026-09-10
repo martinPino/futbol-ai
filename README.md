@@ -61,6 +61,7 @@ Páginas sueltas para inspeccionar piezas del juego de forma aislada. Se abren i
 | `grass/` | texturas PBR del césped (color, normal, roughness, AO, displacement) |
 | `players/` | modelos FBX de jugadores estrella |
 | `stadium/` | estadios Al Wakrah (`wc1`) y Euro Arena (`euro`) como GLB gzip partidos en dos trozos |
+| `venues/` | imágenes del carrusel de estadios del menú (renderizadas desde el propio juego) |
 
 Las carpetas `uploads/`, `screenshots/` y `Tools/` son material de trabajo local y están en `.gitignore`.
 

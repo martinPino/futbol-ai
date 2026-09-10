@@ -67,19 +67,27 @@
     background:#12301e;border:1px solid #2f9555;color:#7fffab;padding:13px 34px;border-radius:5px;cursor:pointer}
   #start button:hover{background:#184a2c}
   #loading{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;color:#6b7a8d}
-  /* selector de estadio: slider (Al Wakrah · Euro Arena · Estadio Central) */
-  #venues{display:flex;flex-direction:column;align-items:center;gap:4px;width:min(440px,86vw)}
-  #venueRange{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:#1d2634;outline:none;
-    cursor:pointer;pointer-events:auto;margin:10px 0 6px}
-  #venueRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;
-    background:#12301e;border:2px solid #2f9555;box-shadow:0 0 0 4px rgba(47,149,85,.18);cursor:pointer}
-  #venueRange::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#12301e;border:2px solid #2f9555;
-    box-shadow:0 0 0 4px rgba(47,149,85,.18);cursor:pointer}
-  #venueRange::-moz-range-track{height:4px;border-radius:2px;background:#1d2634}
-  #venueRange:focus-visible{outline:1px solid #2f9555;outline-offset:8px}
-  #venueTicks{display:flex;width:100%;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;color:#8fa0b4}
-  .vt{flex:1;pointer-events:auto;cursor:pointer;padding:4px 0;transition:color .12s;white-space:nowrap}
-  body.touch #venueTicks{font-size:9px;letter-spacing:.08em}
+  /* selector de estadio: carrusel con imagen (Al Wakrah · Euro Arena · Estadio Central) */
+  #venues{display:flex;align-items:center;gap:10px;pointer-events:auto}
+  #start .vnav{pointer-events:auto;width:40px;height:40px;padding:0 0 3px;border-radius:50%;border:1px solid #1d2634;background:#0d1119;
+    color:#8fa0b4;font:22px/1 'JetBrains Mono',monospace;letter-spacing:0;cursor:pointer;flex:none;transition:border-color .12s,color .12s}
+  #start .vnav:hover{border-color:#2f9555;color:#cff5dd;background:#0d1119}
+  #vCard{position:relative;width:min(380px,calc(100vw - 130px),64vh);aspect-ratio:16/9;border-radius:8px;overflow:hidden;
+    border:1px solid #1d2634;background:#0d1119;pointer-events:auto;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #vImg{display:block;width:100%;height:100%;object-fit:cover;transition:opacity .18s,transform .18s}
+  #vImg.swap{opacity:0;transform:scale(1.03)}
+  #vName{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;text-align:center;font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.24em;color:#cff5dd;background:linear-gradient(transparent,rgba(5,7,12,.85));pointer-events:none}
+  #vDots{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;gap:6px;pointer-events:none}
+  #vDots i{width:6px;height:6px;border-radius:50%;background:rgba(143,160,180,.45);transition:background .12s,transform .12s}
+  #vDots i.on{background:#7fffab;transform:scale(1.25)}
+  body.touch #venues{gap:6px}
+  body.touch #start .vnav{width:44px;height:44px}
+  /* si el menú no cabe (pantallas bajas): centrado con márgenes automáticos + scroll, sin recortar la parte superior */
+  #start{overflow:auto;justify-content:flex-start}
+  #start>h1{margin-top:auto}
+  #start>#loading,#start>#go{margin-bottom:auto}
+  @media (max-height:600px){ #start{gap:12px} #start h1{font-size:34px} #start table{font-size:11px} #start td{padding:2px 12px} }
   .vt:nth-child(1){text-align:left}.vt:nth-child(2){text-align:center}.vt:nth-child(3){text-align:right}
   .vt:hover{color:#cff5dd}
   .vt[aria-current="true"]{color:#7fffab}
@@ -211,13 +219,14 @@
       <tr><td>Q / C / N / B / P</td><td>cambiar jugador · cámara · noche · estadio · pausa</td></tr>
     </table>
     <div id="touchHelp"><b>JOYSTICK</b> mover · en tiro libre apuntar y altura<br><b>DISPARO</b> mantén = potencia · inclina el joystick = rosca<br><b>PASE</b> raso · <b>BOMBEO</b> centro/largo · <b>SPRINT</b> · <b>CAMBIAR</b> jugador</div>
-    <div id="venues">
-      <input id="venueRange" type="range" min="0" max="2" step="1" value="2" aria-label="Estadio">
-      <div id="venueTicks">
-        <span class="vt">AL WAKRAH</span>
-        <span class="vt">EURO ARENA</span>
-        <span class="vt" aria-current="true">ESTADIO CENTRAL</span>
+    <div id="venues" aria-label="Elegir estadio">
+      <button class="vnav" id="vPrev" aria-label="Estadio anterior">‹</button>
+      <div id="vCard">
+        <img id="vImg" alt="" draggable="false">
+        <div id="vName">AL WAKRAH</div>
+        <div id="vDots"></div>
       </div>
+      <button class="vnav" id="vNext" aria-label="Estadio siguiente">›</button>
     </div>
     <div id="loading">CARGANDO ESTRELLAS…</div>
     <button id="go" style="display:none">JUGAR</button>
@@ -232,7 +241,7 @@ import { loadHero } from './hero-models.js';
 import { makeRealPlayer } from './team-models.js';
 import { attachMocap } from './mocap-layer.js';
 import { buildRigTemplate, instantiateRig, Animator } from './player-rig.js';
-import { loadStadium, alignStadium } from './stadium-model.js';
+import { loadStadium, alignStadium, disposeStadium } from './stadium-model.js';
 import { makeCrowdAndFlags, makeFlags, ellipseFlagPoints } from './crowd-flags.js';
 const FX = [];            // actualizadores de ambiente (público, banderas)
 let crowdEx = 0;          // excitación del público (goles)
@@ -327,13 +336,17 @@ function skyEnv(mode) {
 }
 const envDay = skyEnv('day'), envNight = skyEnv('night');
 
+/* móvil/tablet: se detecta antes de crear luces y estadios para recortar coste y memoria (sombras, público, GLBs residentes) */
+const IS_MOBILE = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 1);
+const SHADOW_RES = IS_MOBILE ? 2048 : 4096;
+
 const dayRig = new THREE.Group();
 let sunLight, nightKey;
 {
   const sun = sunLight = new THREE.DirectionalLight(0xfff2dc, 3.0);
   sun.position.set(60, 96, 44);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.mapSize.set(SHADOW_RES, SHADOW_RES);
   sun.shadow.camera.left = -62; sun.shadow.camera.right = 62;
   sun.shadow.camera.top = 78; sun.shadow.camera.bottom = -78;
   sun.shadow.camera.far = 320;
@@ -348,7 +361,7 @@ const nightRig = new THREE.Group();
   const key = nightKey = new THREE.DirectionalLight(0xfff6d8, 2.2);
   key.position.set(-50, 80, 60);
   key.castShadow = true;
-  key.shadow.mapSize.set(4096, 4096);
+  key.shadow.mapSize.set(SHADOW_RES, SHADOW_RES);
   key.shadow.camera.left = -62; key.shadow.camera.right = 62;
   key.shadow.camera.top = 78; key.shadow.camera.bottom = -78;
   key.shadow.camera.far = 320;
@@ -383,23 +396,33 @@ function buildRealVenue(id, label) {
   pitch.position.y = 0.05;
   g.add(pitch);
   sub('CARGANDO ' + label + '…', 3);
-  loadStadium(id)
+  // JUGAR espera a esta promesa si el estadio elegido aún se está cargando
+  g.userData.ready = loadStadium(id)
     .then(sc => {
       const w = alignStadium(id, sc);
       g.add(w);
-      const amb = makeCrowdAndFlags(w, CROWD_OPTS[id]);
-      amb.group.traverse(o => { if (o.name === 'PUBLICO') { o.visible = SHOW_CROWD; g.userData.crowd = o; } });
-      g.add(amb.group);
-      FX.push(amb.update);
+      // público (59k instancias) + banderas sobre las butacas reales. En móvil se pospone hasta activar el público:
+      // muestrear ~800k triángulos justo después de parsear el GLB disparaba la memoria y tumbaba la pestaña.
+      const buildAmb = () => {
+        g.userData.buildAmb = null;
+        const amb = makeCrowdAndFlags(w, CROWD_OPTS[id]);
+        amb.group.traverse(o => { if (o.name === 'PUBLICO') { o.visible = SHOW_CROWD; g.userData.crowd = o; } });
+        g.add(amb.group);
+        FX.push(amb.update); g.userData.fx = amb.update;
+      };
+      if (IS_MOBILE && !SHOW_CROWD) g.userData.buildAmb = buildAmb; else buildAmb();
       sub(label + ' LISTO', 1.4);
     })
-    .catch(e => { console.warn('GLB no cargado', e); sub('ERROR CARGANDO EL ESTADIO', 3); });
+    .catch(e => { console.warn('GLB no cargado', e); sub('ERROR CARGANDO EL ESTADIO', 3); })
+    .then(() => { g.userData.done = true; });
   return g;
 }
 const buildWakrahRealVenue = () => buildRealVenue('wakrah', 'AL WAKRAH');
 const buildEuroVenue = () => buildRealVenue('euro', 'EURO ARENA');
 function buildCentralVenue() {
   const g = buildStadium();
+  g.userData.stands = ['N', 'S', 'E', 'W'].map(k => g.getObjectByName('Tribuna_' + k));   // +z, -z, +x, -x
+  g.userData.done = true;
   const fr = makeFlags(ellipseFlagPoints(12, 70, 92, 0), { poleH: 16, w: 3.2, h: 2 });
   g.add(fr.group);
   FX.push(fr.update);
@@ -416,7 +439,7 @@ let GROUND_Y = 0;   // altura de la superficie del césped de la sede activa (re
 /* el GLB de Al Wakrah proyecta sombras: ampliar la cámara de sombra para abarcar la cubierta */
 function applyShadowArea(i) {
   const wide = i >= 1;
-  const ext = wide ? 132 : 62, extZ = wide ? 140 : 78, res = 4096;
+  const ext = wide ? 132 : 62, extZ = wide ? 140 : 78, res = SHADOW_RES;
   for (const l of [sunLight, nightKey]) {
     l.shadow.camera.left = -ext; l.shadow.camera.right = ext;
     l.shadow.camera.top = extZ; l.shadow.camera.bottom = -extZ;
@@ -434,13 +457,25 @@ function setVenue(i) {
     if (k === i) {
       if (!v.obj) { v.obj = v.build(); scene.add(v.obj); }
       v.obj.visible = true;
-    } else if (v.obj) v.obj.visible = false;
+    } else if (v.obj) {
+      v.obj.visible = false;
+      // móvil: un solo estadio GLB residente (~1M triángulos + texturas cada uno); se reconstruye al volver a elegirlo
+      if (IS_MOBILE && k >= 1) disposeVenue(v);
+    }
   });
   $('venue').textContent = VENUES[i].label;
-  const pos = VENUE_ORDER.indexOf(i), vr = $('venueRange');
-  if (vr) vr.value = pos;
-  document.querySelectorAll('.vt').forEach((t, k) => t.setAttribute('aria-current', k === pos));
-  const tv = $('tagVenue'); if (tv) tv.textContent = VENUES[i].label;
+  syncVenueCarousel();
+}
+function disposeVenue(v) {
+  scene.remove(v.obj);
+  if (v.obj.userData.fx) { const at = FX.indexOf(v.obj.userData.fx); if (at >= 0) FX.splice(at, 1); }
+  v.obj.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+    for (const m of mats) { for (const k in m) { const t = m[k]; if (t && t.isTexture) t.dispose(); } m.dispose(); }
+  });
+  disposeStadium(v.id);
+  v.obj = null;
 }
 
 /* ---------------- rigs articulados (SkinnedMesh) por kit ---------------- */
@@ -981,7 +1016,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyC') S.cam = (S.cam + 1) % 3;
   if (e.code === 'KeyN') setNight(!night);
   if (e.code === 'KeyB') { setVenue((venue + 1) % VENUES.length); sub(VENUES[venue].label, 1.6); }
-  if (e.code === 'KeyH') { SHOW_CROWD = !SHOW_CROWD; for (const v of VENUES) if (v.obj && v.obj.userData.crowd) v.obj.userData.crowd.visible = SHOW_CROWD; sub(SHOW_CROWD ? 'PÚBLICO' : 'SIN PÚBLICO', 1.4); }
+  if (e.code === 'KeyH') { SHOW_CROWD = !SHOW_CROWD; for (const v of VENUES) if (v.obj) { if (SHOW_CROWD && v.obj.userData.buildAmb) v.obj.userData.buildAmb(); if (v.obj.userData.crowd) v.obj.userData.crowd.visible = SHOW_CROWD; } sub(SHOW_CROWD ? 'PÚBLICO' : 'SIN PÚBLICO', 1.4); }
   if (e.code === 'KeyP') { S.paused = !S.paused; flash(S.paused ? 'PAUSA' : '', S.paused ? 9 : 0.01); }
 });
 addEventListener('keyup', e => {
@@ -998,7 +1033,7 @@ function keysWatchdog() { if (performance.now() - keyStamp > 6000) { for (const 
 /* ---------------- controles táctiles (móvil / tablet) ---------------- */
 const TOUCH = { on: false, stick: { x: 0, y: 0, len: 0 }, sprint: false, curl: null, id: null };
 /* detección temprana: oculta la ayuda de teclado del menú antes de JUGAR */
-if (matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 1)) document.body.classList.add('touch');
+if (IS_MOBILE) document.body.classList.add('touch');
 function setupTouch() {
   const coarse = matchMedia('(pointer: coarse)').matches || ('ontouchstart' in window && navigator.maxTouchPoints > 1);
   if (!coarse) return;
@@ -1942,6 +1977,17 @@ function updateCamera(dt) {
   cameraAvoid(camPos, camLook);
   camera.position.copy(camPos);
   camera.lookAt(camLook);
+  cutawayStands();
+}
+/* Estadio Central: sus gradas empiezan a ~2 m de la banda y el techo está a 12 m, así que las cámaras de TV
+   quedan detrás o dentro de la grada cercana. La grada que rodea a la cámara se oculta (cutaway) para no tapar el campo. */
+function cutawayStands() {
+  const v = VENUES[0]; if (!v.obj || !v.obj.userData.stands) return;
+  const [n, s, e, w] = v.obj.userData.stands, p = camera.position, m = 1.5;
+  if (n) n.visible = p.z < HL + m;
+  if (s) s.visible = p.z > -HL - m;
+  if (e) e.visible = p.x < HW + m;
+  if (w) w.visible = p.x > -HW - m;
 }
 
 /* ---------------- loop ---------------- */
@@ -2090,24 +2136,49 @@ function attachReal(p, real) {
 })();
 
 /* ---------------- start ---------------- */
-setVenue(0);
-{
-  const vr = $('venueRange');
-  // mientras se arrastra solo se resalta la opción; el estadio se carga al soltar (evita cargar GLBs intermedios)
-  vr.oninput = () => {
-    const pos = +vr.value;
-    document.querySelectorAll('.vt').forEach((t, k) => t.setAttribute('aria-current', k === pos));
-    $('tagVenue').textContent = VENUES[VENUE_ORDER[pos]].label;
-  };
-  vr.onchange = () => setVenue(VENUE_ORDER[+vr.value]);
-  document.querySelectorAll('.vt').forEach((t, k) => { t.onclick = () => setVenue(VENUE_ORDER[k]); });
+/* carrusel de estadios: imagen + nombre + puntos; orden Al Wakrah · Euro Arena · Estadio Central (última) */
+const VENUE_IMG = { wakrah: './assets/venues/wakrah.webp', euro: './assets/venues/euro.webp', central: './assets/venues/central.webp' };
+const vImg = $('vImg'), vName = $('vName'), vDots = $('vDots');
+VENUE_ORDER.forEach(() => vDots.appendChild(document.createElement('i')));
+for (const src of Object.values(VENUE_IMG)) { const im = new Image(); im.src = src; }   // precarga de las tres imágenes
+vImg.onload = vImg.onerror = () => vImg.classList.remove('swap');
+function syncVenueCarousel() {
+  const pos = VENUE_ORDER.indexOf(venue), v = VENUES[venue], src = VENUE_IMG[v.id];
+  if (vImg.getAttribute('src') !== src) {
+    vImg.classList.add('swap');
+    clearTimeout(vImg._swapT); vImg._swapT = setTimeout(() => { vImg.src = src; }, 120);
+  }
+  vName.textContent = v.label;
+  [...vDots.children].forEach((d, k) => d.classList.toggle('on', k === pos));
+  const tv = $('tagVenue'); if (tv) tv.textContent = v.label;
 }
+const stepVenue = d => setVenue(VENUE_ORDER[(VENUE_ORDER.indexOf(venue) + d + VENUE_ORDER.length) % VENUE_ORDER.length]);
+$('vPrev').onclick = () => stepVenue(-1);
+$('vNext').onclick = () => stepVenue(1);
+{ // deslizar con el dedo o el ratón sobre la imagen
+  const card = $('vCard'); let x0 = null;
+  card.addEventListener('pointerdown', e => { x0 = e.clientX; try { card.setPointerCapture(e.pointerId); } catch (_) { /* puntero sintético o sin captura */ } });
+  card.addEventListener('pointerup', e => { if (x0 === null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 30) stepVenue(dx < 0 ? 1 : -1); });
+  card.addEventListener('pointercancel', () => { x0 = null; });
+}
+addEventListener('keydown', e => {   // flechas del teclado mientras el menú está visible
+  if ($('start').style.display === 'none') return;
+  if (e.code === 'ArrowLeft') stepVenue(-1); else if (e.code === 'ArrowRight') stepVenue(1);
+});
+setVenue(VENUE_ORDER[0]);
 resetPositions(0);
 S.mode = 'kickoff'; S.freeze = 99;
 window.__dbg = { players, S, ball, camera, scene, CONTACTS, knockDown, startSlide, stumble, startSetPiece, THREE, V3: (x, y, z) => new THREE.Vector3(x, y, z) };
 tick();
-$('go').onclick = () => {
-  audioInit();
+$('go').onclick = async () => {
+  const go = $('go'); if (go.disabled) return;
+  audioInit();   // dentro del gesto del usuario (iOS exige crear/reanudar el audio aquí)
+  // si el estadio elegido aún se está descargando, esperar en vez de empezar el partido con el campo vacío
+  while (VENUES[venue].obj && !VENUES[venue].obj.userData.done) {
+    go.disabled = true; go.textContent = 'CARGANDO ' + VENUES[venue].label + '…';
+    await VENUES[venue].obj.userData.ready;
+  }
+  go.disabled = false; go.textContent = 'JUGAR';
   $('start').style.display = 'none';
   document.body.classList.add('playing');
   setupTouch();

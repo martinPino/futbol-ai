@@ -10,3 +10,5 @@ Canvas.dc.html
 football-game-v1-backup.html
 *.DS_Store
 .thumbnail
+.vercel
+.env*

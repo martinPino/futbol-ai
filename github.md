@@ -2,9 +2,10 @@ repo: martinPino/futbol-ai
 branch: main
 
 ## Last sync
-date: 2026-09-10T06:49:47Z
-commit: e0132afe8a26
+date: 2026-09-10T08:11:33Z
+commit: 9207fa680f37
 ### Updated in this project
+- Carrusel de estadios con imagen (assets/venues/*.webp renderizadas desde el juego), orden Al Wakrah · Euro Arena · Estadio Central; JUGAR espera a que cargue el estadio. Cutaway de la grada que rodea la cámara en el Estadio Central (la cámara quedaba detrás de la grada). Móvil: sombras 2048, público diferido, un solo GLB residente, descompresión en streaming (commit 9207fa680f37).
 - Fix móvil: los controles táctiles se mostraban sobre el menú de inicio y tapaban JUGAR (ahora solo aparecen con `body.playing`). Selector de estadio convertido en slider con orden Al Wakrah · Euro Arena · Estadio Central (commit e0132afe8a26).
 - Publicado en Vercel: proyecto `futbol-ai` (equipo martinpinos-projects), producción https://futbol-ai-alpha.vercel.app. `vercel.json` reescribe `/` a `football-game.html`; `.vercel` y `.env*` ignorados. Deploy manual con `npx vercel deploy --prod` (repo no conectado a Vercel todavía).
 - Tercer push: eliminados por indicación del usuario LICENSE, three-d-stage.js y assets/stadium/raw-model.bin (commit e08aee2f6223). Nota: football-kit.html, estadio-real.html y estrellas.html siguen referenciando three-d-stage.js.

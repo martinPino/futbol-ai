@@ -78,7 +78,8 @@
   #venueRange::-moz-range-track{height:4px;border-radius:2px;background:#1d2634}
   #venueRange:focus-visible{outline:1px solid #2f9555;outline-offset:8px}
   #venueTicks{display:flex;width:100%;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.18em;color:#8fa0b4}
-  .vt{flex:1;pointer-events:auto;cursor:pointer;padding:4px 0;transition:color .12s}
+  .vt{flex:1;pointer-events:auto;cursor:pointer;padding:4px 0;transition:color .12s;white-space:nowrap}
+  body.touch #venueTicks{font-size:9px;letter-spacing:.08em}
   .vt:nth-child(1){text-align:left}.vt:nth-child(2){text-align:center}.vt:nth-child(3){text-align:right}
   .vt:hover{color:#cff5dd}
   .vt[aria-current="true"]{color:#7fffab}
